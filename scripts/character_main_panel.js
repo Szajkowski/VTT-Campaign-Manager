@@ -187,13 +187,12 @@ function applyEffectsStats(combatant, updatedStats) {
 
     activeEffects.forEach(effect => {
         // Evaluate if the effect modifies stats AND actively targets the current combatant
-        const targetName = effect.target ? effect.target : effect.invoker;
-        if (targetName !== combatant.uniqueName) return; 
+        if (effect.target !== combatant.uniqueName) return; 
         if (!effect.stats) return; 
 
-        // Determine evaluation context based on effect source ("self" uses invoker's stats for math formulas)
+        // Determine evaluation context based on effect source ("invoker" uses invoker's stats for math formulas)
         let contextCombatant = combatant; 
-        if (effect.source === "self" || effect.source === "invoker") {
+        if (effect.source === "invoker") {
             const invoker = activeCharacters.find(c => c.uniqueName === effect.invoker);
             if (invoker) contextCombatant = invoker;
         }

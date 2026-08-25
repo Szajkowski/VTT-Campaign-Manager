@@ -4,34 +4,8 @@ let isProcessingRoundTransition = false;
 function calculateTotalTurns(combatant) {
     if (combatant.isDead) return 0;
 
-    let extraTurns = 0;
     const tag = 'prop_extra_turn';
-
-    // Check abilities explicitly examining the properties array
-    if (combatant.abilities) {
-        combatant.abilities.forEach(ability => {
-            if (ability.properties && ability.properties.includes(tag)) extraTurns++;
-        });
-    }
-
-    // Check equipment looking at the properties array (with fallback for legacy items relying on old description tag searches)
-    if (combatant.equipment) {
-        combatant.equipment.forEach(item => {
-            if (item.properties && item.properties.includes(tag)) extraTurns++;
-            else if (!item.properties && item.description && item.description.toLowerCase().includes(`[${tag}]`)) extraTurns++;
-        });
-    }
-
-    // Check active effects targeting this specific combatant explicitly via effectProperties
-    if (typeof activeEffects !== 'undefined') {
-        activeEffects.forEach(effect => {
-            // Null target automatically implies the effect affects the invoker
-            const effectiveTarget = effect.target ? effect.target : effect.invoker;
-            if (effectiveTarget === combatant.uniqueName && effect.properties && effect.properties.includes(tag)) {
-                extraTurns++;
-            }
-        });
-    }
+    let extraTurns = countAbilitiesWithProperty(combatant, tag) + countItemsWithProperty(combatant, tag) + countEffectsWithProperty(combatant.uniqueName, tag);
 
     return 1 + extraTurns; // Base turn (1) + Extra Turns found
 }
@@ -239,8 +213,7 @@ function nextTurn(isSilent = false) {
                 const type = durStr.slice(-1);
                 // Turn-based logic: string explicitly ends with 't' or is purely numeric (legacy compatibility)
                 const isTurnBased = type === 't' || !isNaN(type);
-                const effectiveTarget = effect.target ? effect.target : effect.invoker;
-                return effectiveTarget === c.uniqueName && isTurnBased;
+                return effect.target === c.uniqueName && isTurnBased;
             });
 
         modifiedCombatants.push(c);
@@ -301,8 +274,7 @@ function newRound() {
         const isRoundBased = type === 'r';
         const isTurnBased = type === 't' || !isNaN(type);
         
-        const effectiveTarget = effect.target ? effect.target : effect.invoker;
-        const isOrphaned = !activeNames.includes(effectiveTarget);
+        const isOrphaned = effect.target && !activeNames.includes(effect.target);
         
         // Evaluates TRUE if the effect explicitly tracks rounds, or tracks turns but the target is gone
         return isRoundBased || (isTurnBased && isOrphaned);

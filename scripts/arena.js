@@ -106,7 +106,7 @@ function addCharacter(type, team, stats = {}, image = null) {
     syncAddCombatant(combatant);
 
     // Automatically apply entry effects attached directly to the character template
-    processAndSendEffects(uniqueName, null, stats, t('effect'), "self");
+    processAndSendEffects(uniqueName, null, stats, t('effect'), "invoker");
 }
 
 // Renders the token visually on the board based on the combatant object

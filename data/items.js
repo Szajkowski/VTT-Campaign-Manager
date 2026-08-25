@@ -11,24 +11,33 @@ var item = {
             maxHp: "[10 + 1 * reflex - 1 * strength]",
             damage: "[2 * strength]",
             physArmor: "[0.5 * vitality]",
-            physArmorPerc: 20,
             magArmor: "[-3 - 0.5 * intuition]",
-            magArmorPerc: "[20 - 0.5 * intuition]",
         },
     },
     "Ostateczny Item Testowy 2": {
         type: "gear",
         name: "Ostateczny Item Testowy 2",
-        description: "Jest wredny, odejmuje -70 hp.",
+        description: "Opis.",
         properties: ["prop_extra_turn"],
         value: 100,
         stats: {
             maxHp: "[-1 * attunement + 2 * vitality]",
             damage: "[1 * resilience]",
             physArmor: "[-10 + 2 * vitality]",
-            physArmorPerc: -30,
             magArmor: 5,
-            magArmorPerc: "[-5 + 0.8 * intuition]",
+        },
+    },
+    "Ostateczny Item Testowy 3": {
+        type: "gear",
+        name: "Ostateczny Item Testowy 3",
+        description: "",
+        properties: ["prop_frenzy"],
+        value: 100,
+        stats: {
+            maxHp: "[-1 * attunement + 2 * vitality]",
+            damage: "[1 * resilience]",
+            physArmor: "[-10 + 2 * vitality]",
+            magArmor: "[2 * damage]",
         },
     }
 }

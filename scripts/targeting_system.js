@@ -307,19 +307,26 @@ function buildActionTooltipText(action, attacker, target, rollData) {
     if (action.type === 'damage') {
         if (target) {
             // Render exact base calculated damage summing all active property types
-            let val = 0;
-            if (action.valuePerc !== undefined) {
-                val += Math.ceil((target.currentStats.maxHp * parseInt(action.valuePerc)) / 100);
-            }
-            if (action.value !== undefined) {
-                val += getFormulaValue(action.value, attacker, rollData) ?? parseInt(action.value) ?? 0;
-            }
-            text = t('action_dmg_' + action.damageType).replace('{val}', `<strong>${val}</strong>`);
+            const dmgResult = calculateActualDamage(attacker, target, action, rollData);
+            text = t('action_dmg_' + action.damageType).replace('{val}', `<strong>${dmgResult.finalDamage}</strong>`);
         } else {
             // Fallback rendering base estimations when not actively hovering any target
             let parts = [];
-            if (action.value !== undefined) parts.push(getFormulaValue(action.value, attacker, rollData) ?? action.value);
-            if (action.valuePerc !== undefined) parts.push(`${action.valuePerc}%`);
+            
+            let hasFrenzy = countAbilitiesWithProperty(attacker, 'prop_frenzy') > 0 || 
+                            countItemsWithProperty(attacker, 'prop_frenzy') > 0 ||
+                            countEffectsWithProperty(attacker.uniqueName, 'prop_frenzy') > 0;
+            
+            let multiplier = hasFrenzy ? 2 : 1;
+
+            if (action.value !== undefined) {
+                let flatVal = getFormulaValue(action.value, attacker, rollData) ?? parseInt(action.value) ?? 0;
+                parts.push(flatVal * multiplier);
+            }
+            if (action.valuePerc !== undefined) {
+                let perc = parseInt(action.valuePerc) || 0;
+                parts.push(`${perc * multiplier}%`);
+            }
             
             let valStr = parts.length > 0 ? parts.join(' + ') : '0';
             text = t('action_dmg_' + action.damageType).replace('{val}', `<strong>${valStr}</strong>`);

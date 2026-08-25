@@ -459,7 +459,6 @@ async function reloadServerData() {
 
             if (!freshData) continue;
 
-            const currentHp = combatant.currentStats.hp;
             const wasDead = combatant.isDead;
             const turnsTaken = combatant.turnsTakenThisRound || 0; 
 
@@ -481,6 +480,7 @@ async function reloadServerData() {
 
             combatant.isDead = wasDead;
             combatant.turnsTakenThisRound = turnsTaken;
+            combatant.isStunned = false;
             
             combatant.equipment = freshData.equipment ? JSON.parse(JSON.stringify(freshData.equipment)) : [];
             combatant.abilities = freshData.abilities ? JSON.parse(JSON.stringify(freshData.abilities)) : [];
@@ -496,7 +496,7 @@ async function reloadServerData() {
             recalculateCurrentStats(combatant);
             
             // Fully restore current health based on the newly calculated max HP parameters
-            combatant.currentStats.hp = Math.min(currentHp, combatant.currentStats.maxHp);
+            combatant.currentStats.hp = combatant.currentStats.maxHp;
 
             // Maintain cooldown states for abilities that already existed, initialize new ones
             combatant.abilities.forEach(ability => {

@@ -190,7 +190,7 @@ var npcs = {
             ability["Test: Masowy Sabotaż"],
         ],
         equipment: [
-
+            item["Ostateczny Item Testowy 3"],
         ]
     },
 };

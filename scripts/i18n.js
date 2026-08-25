@@ -191,6 +191,7 @@ const i18n = {
         'prop_non_combat': 'Nie do walki.',
         'prop_stuns': 'Ogłuszająca.',
         'prop_lethal': 'Zabójcza.',
+        'prop_frenzy': 'Szał.',
 
         'desc_prop_undodgeable': 'Ignoruje rzuty na trafienie kontra unik. Zawsze trafia w cel.',
         'desc_prop_extra_turn': 'Tury postaci są rozkładane równomiernie na pasku inicjatywy. Przykładowo: postać z refleksem 30 i jedną turą zagra na 30 stopniu. Z dwiema turami zagra na 30 i 15, a z trzema turami na 30, 20 i 10.',
@@ -198,6 +199,7 @@ const i18n = {
         'desc_prop_non_combat': 'Umiejętność przeznaczona do użytku poza bezpośrednią walką.',
         'desc_prop_stuns': 'Nakłada na cel ogłuszenie. W przypadku akcji z wymuszonymi rzutami, ogłusza tylko przy niepowodzeniu obrońcy.',
         'desc_prop_lethal': 'Ignoruje mechanikę Wrót Śmierci. Cel ginie natychmiast, gdy jego zdrowie spadnie do zera.',
+        'desc_prop_frenzy': 'Postać zadaje podwójne (x2) obrażenia z jakiegokolwiek źródła (np. z ataków w umiejętnościach). Efekt nie kumuluje się ze sobą.',
 
         'item_baseline_hint': 'Statystyki przedmiotu są obliczane na podstawie bazowych, niezmodyfikowanych statystyk postaci.',
 
@@ -453,6 +455,7 @@ const i18n = {
         'prop_non_combat': 'Non combat.',
         'prop_stuns': 'Stuns target.',
         'prop_lethal': 'Lethal.',
+        'prop_frenzy': 'Frenzy.',
 
         'desc_prop_undodgeable': 'Ignores hit vs dodge rolls. Always hits the target.',
         'desc_prop_extra_turn': 'Character turns are distributed evenly on the initiative bar. For example: a character with 30 reflex and one turn acts at step 30. With two turns at 30 and 15, and with three turns at 30, 20, and 10.',
@@ -460,6 +463,7 @@ const i18n = {
         'desc_prop_non_combat': 'An ability meant to be used outside of direct combat.',
         'desc_prop_stuns': 'Stuns the target. For actions with forced rolls, it stuns only if the defender fails the check.',
         'desc_prop_lethal': 'Ignores Death\'s Door mechanics. The target dies instantly if their health drops to zero.',
+        'desc_prop_frenzy': 'Character deals double (x2) damage from any source (e.g. from attack actions in abilities). This effect does not stack.',
 
         'item_baseline_hint': 'Item stats are calculated based on the character\'s base, unmodified stats.',
 

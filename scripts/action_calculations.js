@@ -465,6 +465,15 @@ function calculateActualDamage(attacker, target, payload, rollData) {
     let finalDamage = Math.max(Math.round(baseDamage), 0);
     let finalDamageType = payload.damageType;
 
+    // Check for prop_frenzy multiplier using uniform property counters
+    let hasFrenzy = countAbilitiesWithProperty(attacker, 'prop_frenzy') > 0 || 
+                    countItemsWithProperty(attacker, 'prop_frenzy') > 0 ||
+                    countEffectsWithProperty(attacker.uniqueName, 'prop_frenzy') > 0;
+
+    if (hasFrenzy) {
+        finalDamage *= 2;
+    }
+
     // Armor no longer acts as a percentage reducer here, handled sequentially in resolution
     return { baseDamage: finalDamage, finalDamage: finalDamage, finalDamageType };
 }

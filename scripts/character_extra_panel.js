@@ -389,6 +389,21 @@ function calculateAbilitySuccessRate(combatant, abilityRoll, abilityDifficulty) 
     return Math.floor((successfulCombos / dist.totalCombos) * 100);
 }
 
+// Helper: Count abilities with a specific property
+function countAbilitiesWithProperty(combatant, property) {
+    if (!combatant || !combatant.abilities) return 0;
+    return combatant.abilities.filter(ability => ability.properties && ability.properties.includes(property)).length;
+}
+
+// Helper: Count equipment items with a specific property
+function countItemsWithProperty(combatant, property) {
+    if (!combatant || !combatant.equipment) return 0;
+    return combatant.equipment.filter(item => {
+        if (item.properties && item.properties.includes(property)) return true;
+        return false;
+    }).length;
+}
+
 // Routes abilities, resolves multi-dice arrays securely and prepares sequence pipelines utilizing optimistic locks
 async function useAbility(combatantId, ability, event) {
     const combatant = activeCharacters.find(c => c.id === combatantId);
@@ -488,7 +503,7 @@ async function useAbility(combatantId, ability, event) {
     if (needsPipeline) {
         startActionPipeline(updatedCombatant, ability.actions, ability, initialRollsData, event, shouldBroadcastInitRollImmediately);
     } else if (success) {
-        processAndSendEffects(updatedCombatant.uniqueName, null, ability, ability.name, ability.source || "self");
+        processAndSendEffects(updatedCombatant.uniqueName, null, ability, ability.name, ability.source || "invoker");
     }
 }
 

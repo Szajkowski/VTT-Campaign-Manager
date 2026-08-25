@@ -37,6 +37,12 @@ function cleanUpExpiredEffects() {
     updateServerEffects(activeEffects);
 }
 
+// Returns the number of active effects that have a specific property for a given target
+function countEffectsWithProperty(targetName, property) {
+    if (!activeEffects || activeEffects.length === 0) return 0;
+    return activeEffects.filter(effect => effect.target === targetName && effect.properties && effect.properties.includes(property)).length;
+}
+
 // Render the Active Effects Panel dynamically matching the UI layout
 function renderEffects() {
     const container = document.getElementById('effects-list-container');
@@ -52,24 +58,11 @@ function renderEffects() {
         const safeInvoker = (effect.invoker || '').replace(/'/g, "\\'");
         const safeTarget = (effect.target || '').replace(/'/g, "\\'");
 
-        // Support both new target_ prefixed keys and legacy group target names
-        const isGroupTarget = ['target_team_enemy', 'target_team_ally', 'target_all', 'team_enemy', 'team_ally', 'all', 'hero', 'enemy'].includes(effect.target);
-        
-        // Dynamically resolve translation for group targets (e.g., mapping 'team_enemy' to 'target_team_enemy')
-        let displayTarget = effect.target;
-        if (isGroupTarget) {
-            let i18nKey = effect.target;
-            if (!i18nKey.startsWith('target_')) {
-                i18nKey = 'target_' + i18nKey;
-            }
-            displayTarget = t(i18nKey);
-        }
-
         // Fetch invoker and target combatants
         const invokerCombatant = activeCharacters.find(c => c.uniqueName === effect.invoker);
         const targetCombatant = activeCharacters.find(c => c.uniqueName === effect.target);
 
-        // Determine calculation context based on effect.source ("self" [default] vs "target")
+        // Determine calculation context based on effect.source ("invoker" [default] vs "target")
         let evalContext = invokerCombatant;
         if (effect.source === 'target' && targetCombatant) {
             evalContext = targetCombatant;
@@ -102,12 +95,10 @@ function renderEffects() {
                     <span class="copyable-value" title="${t('effect_copy')}" onclick="copyValue('${safeInvoker}')">${t('effect_invoker')}</span>
                     <input type="text" class="effect-target" value="${effect.invoker || ''}" onchange="updateEffectInvoker('${effect.id}', this.value)">
                 </div>
-                ${effect.target ? `
                 <div class="effect-target-wrapper">
                     <span class="copyable-value" title="${t('effect_copy')}" onclick="copyValue('${safeTarget}')">${t('target')}</span>
-                    <input type="text" class="effect-target ${isGroupTarget ? 'readonly-group' : ''}" value="${displayTarget}" ${isGroupTarget ? 'readonly' : ''} onchange="updateEffectTarget('${effect.id}', this.value)">
+                    <input type="text" class="effect-target" value="${effect.target || ''}" onchange="updateEffectTarget('${effect.id}', this.value)">
                 </div>
-                ` : ''}
                 <div class="effect-desc">${parsedDesc}</div>
             </div>
         `;
@@ -134,14 +125,14 @@ function updateEffectTarget(id, newTarget) {
     }
 }
 
-function buildEffectObject(invoker, target, name, description, duration, source = "self", properties = [], stats = {}) {
+function buildEffectObject(invoker, target, name, description, duration, source = "invoker", properties = [], stats = {}) {
     // Preserve raw description so property tags like [prop_extra_turn] are searchable and dynamic
     return {
         id: `effect-${Date.now()}-${Math.random().toString(16).slice(2)}`,
         name: name,
         invoker: invoker,
         target: target || null,
-        source: source || "self",
+        source: source || "invoker",
         description: description,
         duration: duration,
         properties: properties,
@@ -150,7 +141,7 @@ function buildEffectObject(invoker, target, name, description, duration, source 
 }
 
 // Centralized helper to process, batch, and broadcast effects from either the new array format or legacy single format
-function processAndSendEffects(invoker, target, sourceData, fallbackName, defaultSource = "self", evalData = null) {
+function processAndSendEffects(invoker, target, sourceData, fallbackName, defaultSource = "invoker", evalData = null) {
     let newEffects = [];
 
     if (sourceData.effects && Array.isArray(sourceData.effects)) {
@@ -171,9 +162,9 @@ function processAndSendEffects(invoker, target, sourceData, fallbackName, defaul
             
             let effTarget = effect.target !== undefined ? effect.target : target;
             
-            // Resolves "self" tags globally (case-insensitive) to explicitly clear the UI targeting parameter internally
-            if (String(effTarget).toLowerCase() === 'self' || String(sourceData.target).toLowerCase() === 'self') {
-                effTarget = null; 
+            // Resolves "self" tags globally (case-insensitive) to explicitly assign the invoker as the target
+            if (String(effTarget).toLowerCase() === 'self' || (sourceData.target && String(sourceData.target).toLowerCase() === 'self')) {
+                effTarget = invoker; 
             }
             
             const effProps = effect.properties || [];
