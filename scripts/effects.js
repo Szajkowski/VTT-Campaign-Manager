@@ -43,6 +43,12 @@ function countEffectsWithProperty(targetName, property) {
     return activeEffects.filter(effect => effect.target === targetName && effect.properties && effect.properties.includes(property)).length;
 }
 
+// Returns an array of effects that possess a specific trigger for a given target
+function getEffectsWithTrigger(targetName, triggerName) {
+    if (!activeEffects || activeEffects.length === 0) return [];
+    return activeEffects.filter(effect => effect.target === targetName && effect.triggers && effect.triggers[triggerName]);
+}
+
 // Render the Active Effects Panel dynamically matching the UI layout
 function renderEffects() {
     const container = document.getElementById('effects-list-container');
@@ -125,7 +131,7 @@ function updateEffectTarget(id, newTarget) {
     }
 }
 
-function buildEffectObject(invoker, target, name, description, duration, source = "invoker", properties = [], stats = {}) {
+function buildEffectObject(invoker, target, name, description, duration, source = "invoker", properties = [], stats = {}, triggers = {}) {
     // Preserve raw description so property tags like [prop_extra_turn] are searchable and dynamic
     return {
         id: `effect-${Date.now()}-${Math.random().toString(16).slice(2)}`,
@@ -136,7 +142,8 @@ function buildEffectObject(invoker, target, name, description, duration, source 
         description: description,
         duration: duration,
         properties: properties,
-        stats: stats
+        stats: stats,
+        triggers: triggers
     };
 }
 
@@ -169,8 +176,9 @@ function processAndSendEffects(invoker, target, sourceData, fallbackName, defaul
             
             const effProps = effect.properties || [];
             const effStats = effect.stats || {};
+            const effTriggers = effect.triggers || {};
             
-            newEffects.push(buildEffectObject(invoker, effTarget, effName, effDesc, effDuration, effSource, effProps, effStats));
+            newEffects.push(buildEffectObject(invoker, effTarget, effName, effDesc, effDuration, effSource, effProps, effStats, effTriggers));
         }
     }
 

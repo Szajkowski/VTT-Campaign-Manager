@@ -640,17 +640,53 @@ async function executeTargetedAction(targetId) {
     }
 }
 
+// Helper for asynchronous pauses between repeated actions. Used to block pipeline progression during WS sequences.
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+// Core Execution loop for effect triggers. Dispatches actions isolated from the main pipeline.
+async function processEffectTriggers(combatantId, triggerName) {
+    const target = activeCharacters.find(c => c.id === combatantId);
+    if (!target) return;
+
+    const effects = getEffectsWithTrigger(target.uniqueName, triggerName);
+    if (!effects || effects.length === 0) return;
+
+    for (const effect of effects) {
+        const actions = effect.triggers[triggerName];
+        if (!Array.isArray(actions)) continue;
+
+        for (let action of actions) {
+            // Clone action to avoid mutating the live template
+            let effectPayload = JSON.parse(JSON.stringify(action));
+            effectPayload.isEffectAction = true; // Crucial loop prevention flag
+            
+            // Give effect actions an explicit stepId for internal visual grouping
+            effectPayload.stepId = 'eff-step-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7);
+
+            const invoker = activeCharacters.find(c => c.uniqueName === effect.invoker) || target;
+
+            // Fire the action securely through the native resolution pipeline.
+            await processActionExecution(invoker, target, effectPayload, false);
+        }
+    }
+}
+
 // Master Handler evaluating Hit and Defensive Mechanics (forceRoll, forceRollVS)
 // Packages the dice pool and dispatches to specific execution modules
 // Added skipSync flag to prevent spamming server on multi-target grouped actions
 async function processActionExecution(attacker, target, payload, skipSync = false) {
+    const isEffect = payload.isEffectAction === true;
+
+    // --- PRE-EXECUTION HOOKS ---
+    if (!isEffect && payload.type === 'damage') {
+        await processEffectTriggers(attacker.id, 'onAttack');
+        await processEffectTriggers(target.id, 'onAttacked');
+    }
+
     let evalRes = evaluateActionSuccessAndResistance(attacker, target, payload, consumeInitialRoll);
     let evalData = { hasForcedRolls: evalRes.hasForcedRolls, targetPassedChecks: evalRes.targetPassedChecks };
     
     // Evaluate stun for non-damage actions independently.
-    // Stun applies if there are no forced rolls, or if the target fails at least one forced roll.
-    // This must be checked outside the main success block because a hostile action "succeeds" when the target fails the roll,
-    // but a beneficial action "fails" when the target fails the roll. In both cases, failing the roll triggers the stun.
     let shouldStunNonDamage = payload.type !== 'damage' && hasActiveProperty(payload, 'prop_stuns') && (!evalRes.hasForcedRolls || !evalRes.targetPassedChecks);
 
     if (shouldStunNonDamage) {
@@ -658,12 +694,26 @@ async function processActionExecution(attacker, target, payload, skipSync = fals
         if (freshTarget && !freshTarget.isDead) {
             freshTarget.isStunned = true;
             if (!skipSync) syncUpdateCombatant(freshTarget);
+            
+            if (!isEffect) await processEffectTriggers(target.id, 'onStunned');
         }
     }
 
+    // --- EXECUTION DISPATCH ---
     if (payload.type === 'damage') {
         // Damage handler natively appends Death's Door checks inside the same visual package block
         const hitSuccess = await resolveDamageAction(attacker, target, payload, evalRes, skipSync);
+        
+        // --- POST-EXECUTION DAMAGE HOOKS ---
+        if (!isEffect) {
+            if (hitSuccess) {
+                await processEffectTriggers(attacker.id, 'onDealDamage');
+                await processEffectTriggers(target.id, 'onTakeDamage');
+            } else if (evalRes.subType === 'dodge') {
+                await processEffectTriggers(target.id, 'onDodge');
+            }
+        }
+
         if (hitSuccess && payload.effects) {
             processAndSendEffects(attacker.uniqueName, target.uniqueName, payload, payload.name || t('effect'), "target", evalData);
         }
@@ -675,9 +725,19 @@ async function processActionExecution(attacker, target, payload, skipSync = fals
         }
         
         if (evalRes.success) {
-            if (payload.type === 'heal') await resolveHealAction(target, payload, attacker, skipSync, shouldStunNonDamage);
-            else if (payload.type === 'armor') await resolveArmorAction(target, payload, attacker, skipSync, shouldStunNonDamage);
-            else if (payload.type === 'effect') {
+            if (payload.type === 'heal') {
+                await resolveHealAction(target, payload, attacker, skipSync, shouldStunNonDamage);
+                if (!isEffect) {
+                    await processEffectTriggers(attacker.id, 'onHeal');
+                    await processEffectTriggers(target.id, 'onHealed');
+                }
+            } else if (payload.type === 'armor') {
+                await resolveArmorAction(target, payload, attacker, skipSync, shouldStunNonDamage);
+                if (!isEffect) {
+                    await processEffectTriggers(attacker.id, 'onArmor');
+                    await processEffectTriggers(target.id, 'onArmored');
+                }
+            } else if (payload.type === 'effect') {
                 // If it's a pure effect action that triggered a stun, broadcast the sequence purely for the sound and visuals
                 if (shouldStunNonDamage) {
                     syncPlayActionSequence({ targetId: target.id, actionType: payload.type, subType: 'success', repeats: 1, stepId: payload.stepId, isAuto: skipSync, isStunned: true });
